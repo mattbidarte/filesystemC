@@ -19,6 +19,11 @@ typedef struct _rep_directorio *TDirectorio;
 struct _rep_directorio {
     Cadena nombreDir;
     ListaArchivo archivo;
+    TDirectorio root;
+    TDirectorio padre;
+    TDirectorio primerHijo;
+    TDirectorio primerHermano;
+    Cadena ruta;
 };
 
 //Crea el directorio de nombre Raíz del filesystem 
@@ -28,7 +33,12 @@ TDirectorio createRootDirectory(){
     nodo->nombreDir = new char[5];
     strcpy(nodo->nombreDir, "RAIZ");
     nodo->archivo = NULL;
-    
+    nodo->padre = NULL;
+    nodo->primerHermano = NULL;
+    nodo->primerHijo = NULL;
+    nodo->root = nodo;
+    nodo->ruta = new char[5];
+    strcpy(nodo->ruta, "RAIZ");
     return nodo;   
 };
 
@@ -193,11 +203,192 @@ void destroyDirectory (TDirectorio& directorio){
         }
     }
     
+     // Recorrer y destruir los directorios hijos del directorio
+    TDirectorio hijo = directorio->primerHijo;
+    while (hijo != NULL) {
+        TDirectorio siguienteHijo = hijo->primerHermano;
+        destroyDirectory(hijo);
+        hijo = siguienteHijo;
+    }
+    
     // Borrar la memoria usada por el nombre del directorio
     delete[] directorio->nombreDir;
+    
+    // Borrar la memoria usada por la ruta del directorio
+    delete[] directorio->ruta;
     
     // Eliminar el directorio
     delete directorio;
  
     directorio = NULL;
 };
+
+//******************************Nuevas funciones ***************************************
+
+//retorna true si el directorio de nombre nombreDierctorioHijo es hijo del directorio "directorio"
+bool existChildrenDirectory(TDirectorio directorio, Cadena nombreDirectorioHijo){
+    // Caso base: si el directorio no tiene hijos, devuelve falso
+    if (directorio->primerHijo == NULL) {
+        return false;
+    }
+
+    // Recorre todos los hijos del directorio
+    TDirectorio primerHijo = directorio->primerHijo;
+    // Comprueba si el nombre del directorio actual coincide con el nombre buscado
+    if (strcmp(primerHijo->nombreDir, nombreDirectorioHijo) == 0) {
+        return true;
+    } else {
+        // Llamada recursiva para comprobar en los hermanos del directorio actual
+        if (primerHijo->primerHermano != NULL) {
+            return existChildrenDirectory(primerHijo->primerHermano, nombreDirectorioHijo);
+        } else {
+            return false;
+        }
+    }
+};
+
+//pre-condición el directorio de nombre nombreDirectorioHijo es hijo del directorio Directorio
+//pos-condición retorna un puntero al directorio de nombre nombreDirectorioHijo
+TDirectorio moveChildrenDirectory (TDirectorio& directorio, Cadena nombreDirectorioHijo){
+    TDirectorio directorioHijo = directorio->primerHijo;
+    
+    while (directorioHijo != NULL) {
+        if (strcmp(directorioHijo->nombreDir, nombreDirectorioHijo) == 0) {
+            return directorioHijo;
+        }else
+            directorioHijo = directorioHijo->primerHermano;
+    }
+    
+    return NULL; // Si no se encuentra el directorio hijo
+};
+
+//retorna un puntero de TDirectorio al padre del directorio directorio
+TDirectorio moveFatherDirectory (TDirectorio& directorio){
+    return directorio->padre;
+};
+
+//retorna un puntero de TDirectorio al directorio ROOT
+TDirectorio moveRootDirectory (TDirectorio& directorio){
+    return directorio->root;
+};
+
+//retorna true si el directorio directorio es root
+bool isRootDirectory (TDirectorio directorio){
+    return (directorio == directorio->root);
+};
+
+//Pre-Condición del directorio de nombre nombreDirectorio no es hijo del directorio "directorio"
+//pos-condición crea un directorio vacío, de nombre nombreDirectorio, hijo del directorio "directorio"
+void createChildrenDirectory (TDirectorio& directorio, Cadena nombreDirectorio){
+    TDirectorio nuevoDir = new _rep_directorio; 
+    nuevoDir->nombreDir = new char[strlen(nombreDirectorio) + 1];
+    strcpy(nuevoDir->nombreDir, nombreDirectorio);
+    nuevoDir->archivo = NULL;
+    nuevoDir->padre = directorio;
+    nuevoDir->primerHermano = NULL;
+    nuevoDir->primerHijo = NULL;
+    
+    nuevoDir->ruta = new char[strlen(nombreDirectorio) + strlen(directorio->ruta) + 2];
+    strcpy(nuevoDir->ruta, directorio->ruta);
+    strcat(nuevoDir->ruta, "/");
+    strcat(nuevoDir->ruta, nombreDirectorio);
+    
+    if(directorio->padre == NULL)
+        nuevoDir->root = directorio;
+    else
+        nuevoDir->root = directorio->root;
+    
+    // Agregar el nuevo directorio como el primer hijo
+    if (directorio->primerHijo == NULL) {
+        directorio->primerHijo = nuevoDir;
+    } else {
+        // Agregar el nuevo directorio de manera alfabeticamente
+        TDirectorio actual = directorio->primerHijo;
+        TDirectorio anterior = NULL;
+
+        while (actual != NULL && strcmp(nombreDirectorio, actual->nombreDir) > 0) {
+            anterior = actual;
+            actual = actual->primerHermano;
+        }
+
+        if (anterior == NULL) {
+            // Agregar el nuevo directorio al principio
+            nuevoDir->primerHermano = directorio->primerHijo;
+            directorio->primerHijo = nuevoDir;
+        } else {
+            // Agregar el nuevo directorio después de "anterior"
+            nuevoDir->primerHermano = anterior->primerHermano;
+            anterior->primerHermano = nuevoDir;
+        }
+    }
+};
+
+//pre-condición el directorio de nombre nombreDirectorio es hijo del directorio directorio
+//pos-condición elimina el directorio de nombre nombreDirectorio que es hijo del directorio directorio
+//eliminando toda su memoria
+void removeChildrenDirectory (TDirectorio& directorio, Cadena nombreDirectorio){
+    TDirectorio aBorrar = moveChildrenDirectory(directorio, nombreDirectorio);
+    
+    if (directorio->primerHijo == aBorrar) {
+        directorio->primerHijo = aBorrar->primerHermano;
+    } else {
+        TDirectorio hermano = directorio->primerHijo;
+        while (hermano != NULL) {
+            if (hermano->primerHermano == aBorrar) {
+                hermano->primerHermano = aBorrar->primerHermano;
+                break;
+            }else
+                hermano = hermano->primerHermano;
+        }
+    }
+
+    destroyDirectory(aBorrar);
+};
+
+//pre-condición el directorio origen es sub-directorio del directorio "directorio"
+//pos-condición mueve el directorio origen y todo su contenido al directorio destino
+void moveSubDirectory (TDirectorio& directorio, TDirectorio origen, TDirectorio& destino);
+
+//pre-condición el archivo origen es sub archivo del directorio directorio
+//pos-condición se mueve el archivo TArchivo como hijo del directorio destino
+void moveSubArchive (TDirectorio& directorio, TArchivo origen, TDirectorio destino);
+
+//pre-condición: directorio no es el directorio ROOT
+//pos-condición: retorna un puntero al primer hermano del diretorio "directorio"
+TDirectorio firstBrotherDirectory(TDirectorio directorio){
+    return directorio->primerHermano;
+};
+
+//pos-condición: retorna un puntero al primer hijo del directorio "directorio"
+TDirectorio firstChildrenDirectory(TDirectorio directorio){
+    return directorio->primerHijo;
+};
+
+//Retorna true si el directorio subdir es sub-directorio del directorio "directorio" en cualquier nivel.
+bool isSubDirectoryRoot (TDirectorio directorio, Cadena ruta);
+
+//pos-condición imprime el directorio ejecuando DIR
+void printDirectoryDir (TDirectorio directorio){
+    ListaArchivo actualArchivo = directorio->archivo;
+    TDirectorio primerHijo = directorio->primerHijo;
+    
+    printf("%s\n", directorio->ruta);
+    
+    while (actualArchivo != NULL) {
+        TArchivo actual = actualArchivo->elemento;
+        if (haveWritePermission(actual)) {
+            printf("%s        Lectura/Escritura\n", getFileName(actual));
+        } else{
+            printf("%s        Lectura\n", getFileName(actual));
+        }
+        actualArchivo = actualArchivo->sig;
+    }
+
+    while (primerHijo != NULL) {
+        printf("%s\n", primerHijo->nombreDir);
+        primerHijo = primerHijo->primerHermano;
+    }
+};
+
+//pos-condición imprime el directorio ejecutando DIR /S
+void printDirectoryDirS (TDirectorio directorio);

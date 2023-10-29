@@ -42,6 +42,12 @@ TipoRet IN (TDirectorio &sistema, char *nombreArchivo, char* texto);
 TipoRet DF (TDirectorio &sistema, char *nombreArchivo, char* cantidad);
 TipoRet TYPE (TDirectorio &sistema, char *nombreArchivo);
 TipoRet DESTRUIRSISTEMA (TDirectorio &sistema);
+TipoRet CD (TDirectorio &sistema, Cadena nombreDirectorio);
+TipoRet MKDIR (TDirectorio &sistema, Cadena nombreDirectorio);
+TipoRet RMDIR (TDirectorio &sistema, Cadena nombreDirectorio);
+TipoRet DIR (TDirectorio &sistema, Cadena parametro);
+TipoRet MOVE (TDirectorio &sistema, Cadena nombreDirectorio, Cadena directorioDestino);
+
 bool sistemaInicializado=false;
 
 
@@ -52,9 +58,12 @@ int main() {
     char parametro[MAX_PALABRA];
     char texto[MAX_PALABRA];
     char nombrearchivo[MAX_NOMBRE];
+    char nombredirectorio[MAX_NOMBRE];
     char cantidad [MAX_PALABRA];
     //char parametro;
-    TDirectorio sistema;
+    
+    TDirectorio root;
+    TDirectorio diractual;
     
     bool salir = false;
     while (!salir) {
@@ -87,16 +96,33 @@ int main() {
         }        
         else if (!strcmp(comando,"TYPE"))
                 leerChars(nombrearchivo);
-                
+        //NUEVO
+        else if (!strcmp(comando,"CD"))
+                leerChars(nombredirectorio);
+        
+        else if (!strcmp(comando,"MKDIR"))
+                leerChars(nombredirectorio);
+        
+        else if (!strcmp(comando,"RMDIR"))
+                leerChars(nombredirectorio);
+        
+        else if (!strcmp(comando,"DIR"))
+                leerRestoLinea(parametro);
+        
+        else if (!strcmp(comando,"MOVE")){
+                leerChars(nombredirectorio);
+                leerRestoLinea(texto);
+        }        
         
         // *********************** Procesamiento de comandos ***********************************
         
         
         if (0 == strcmp(comando, "CREARSISTEMA")) {
             if (!sistemaInicializado){
-                TipoRet salida=CREARSISTEMA(sistema);
+                TipoRet salida=CREARSISTEMA(root);
                 if (salida == OK){
                     sistemaInicializado=true;
+                    diractual = root;
                     printf("  OK\n");
                 }
             }   
@@ -104,60 +130,101 @@ int main() {
                  printf("  EL SISTEMA YA FUE INICIALIZADO\n");
 
         }else if (0 == strcmp(comando, "CREATEFILE")) {   
-                TipoRet salida = CREATE(sistema, nombrearchivo);
+                TipoRet salida = CREATE(diractual, nombrearchivo);
                 if (salida == OK)
                         printf("  OK\n");
                 else if (salida == ERROR )
                                 printf("  ERROR\n"); 
 
         } else if (0 == strcmp(comando, "DELETE")) {
-                TipoRet salida=DELETE(sistema,nombrearchivo);
+                TipoRet salida=DELETE(diractual,nombrearchivo);
                 if (salida == OK)
                         printf("  OK\n");
                 else if (salida == ERROR )
                                 printf("  ERROR\n");
 
         } else if (0 == strcmp(comando, "ATTRIB")) {
-                TipoRet salida=ATTRIB(sistema, nombrearchivo,parametro);
+                TipoRet salida=ATTRIB(diractual, nombrearchivo,parametro);
                 if (salida == OK)
                         printf("  OK\n");
                 else if (salida == ERROR )
                                 printf("  ERROR\n");
                 
         } else if (0 == strcmp(comando, "IF")) {
-                TipoRet salida=IF(sistema, nombrearchivo,texto);
+                TipoRet salida=IF(diractual, nombrearchivo,texto);
                 if (salida == OK)
                         printf("  OK\n");
                 else if (salida == ERROR)
                                 printf("  ERROR\n");
                 
         } else if (0 == strcmp(comando, "IN")) {
-                TipoRet salida=IN(sistema, nombrearchivo,texto);
+                TipoRet salida=IN(diractual, nombrearchivo,texto);
                 if (salida == OK)
                         printf("  OK\n");
                 else if (salida == ERROR )
                                 printf("  ERROR\n");
                 
         } else if (0 == strcmp(comando, "DF")) {
-                TipoRet salida=DF(sistema, nombrearchivo, cantidad);
+                TipoRet salida=DF(diractual, nombrearchivo, cantidad);
                 if (salida == OK)
                         printf("  OK\n");
                 else if (salida == ERROR )
                                 printf("  ERROR\n");
                 
         } else if (0 == strcmp(comando, "TYPE")) {
-                TipoRet salida=TYPE(sistema, nombrearchivo);
+                TipoRet salida=TYPE(diractual, nombrearchivo);
                 if (salida == OK)
                         printf("  OK\n");
                 else if (salida == ERROR )
                                 printf("  ERROR\n");
                 
         } else if (0 == strcmp(comando, "DESTRUIRSISTEMA")) {
-                TipoRet salida=DESTRUIRSISTEMA(sistema);
+                TipoRet salida=DESTRUIRSISTEMA(root);
                 if (salida == OK)
                         printf("  OK\n");
                 else if (salida == ERROR )
                                 printf("  ERROR\n");
+        //nuevos        
+        }else if (0 == strcmp(comando, "CD")) {
+                TipoRet salida=CD(diractual, nombredirectorio);
+                if (salida == OK){
+                    /*
+                        if (0 == strcmp(nombredirectorio, "..")){
+                            diractual = dirmoveFatherDirectory(diractual);
+                        }
+                     * */
+                        printf("  OK\n");
+                }else if (salida == ERROR )
+                                printf("  ERROR\n");
+                
+        }else if (0 == strcmp(comando, "MKDIR")) {
+                TipoRet salida=MKDIR(diractual, nombredirectorio);
+                if (salida == OK)
+                        printf("  OK\n");
+                else if (salida == ERROR )
+                                printf("  ERROR\n");
+                
+        }else if (0 == strcmp(comando, "RMDIR")) {
+                TipoRet salida=RMDIR(diractual, nombredirectorio);
+                if (salida == OK)
+                        printf("  OK\n");
+                else if (salida == ERROR )
+                                printf("  ERROR\n");
+                
+        }else if (0 == strcmp(comando, "DIR")) {
+                TipoRet salida=DIR(diractual, parametro);
+                if (salida == OK)
+                        printf("  OK\n");
+                else if (salida == ERROR )
+                                printf("  ERROR\n");
+                
+        }else if (0 == strcmp(comando, "MOVE")) {
+                TipoRet salida=MOVE(diractual, nombredirectorio, texto);
+                if (salida == OK)
+                        printf("  OK\n");
+                else if (salida == ERROR )
+                                printf("  ERROR\n");
+                
         }else
             printf("  Comando no reconocido.\n");
 
@@ -169,8 +236,8 @@ int main() {
 
 //****************************** Funciones a implementar ************************************
 
-TipoRet CREARSISTEMA (TDirectorio &sistema){
-    sistema = createRootDirectory();
+TipoRet CREARSISTEMA (TDirectorio &root){
+    root = createRootDirectory();
     return OK;
 }  
 
@@ -336,10 +403,99 @@ TipoRet TYPE (TDirectorio &sistema, Cadena nombreArchivo){
     }  
 }
 
-TipoRet DESTRUIRSISTEMA (TDirectorio &sistema){
+TipoRet DESTRUIRSISTEMA (TDirectorio &root){
     if(sistemaInicializado){
-        destroyDirectory(sistema);
+        destroyDirectory(root);
         sistemaInicializado=false;
+        return OK;
+    }else {
+        printf("  - Sistema no inicializado -\n");
+        return ERROR;
+    }
+}
+
+//NUEVOS--------------------------------------------------
+
+TipoRet CD (TDirectorio &sistema, Cadena nombreDirectorio){
+    if(sistemaInicializado){
+        if (0 == strcmp(nombreDirectorio, "..")){
+            if(!isRootDirectory(sistema)){
+                sistema = moveFatherDirectory(sistema);
+                return OK;
+            }else{
+                printf("  - Directorio actual RAIZ -\n");
+                return ERROR;
+            }
+            
+        }else if (0 == strcmp(nombreDirectorio, "RAIZ")){
+            sistema = moveRootDirectory(sistema);
+            return OK;
+        }else{
+            if(existChildrenDirectory(sistema, nombreDirectorio)){
+                sistema = moveChildrenDirectory(sistema, nombreDirectorio);
+                return OK;
+            }else{
+                printf("  - Directorio no existente -\n");
+                return ERROR;
+            }
+            
+        }
+    }else {
+        printf("  - Sistema no inicializado -\n");
+        return ERROR;
+    }
+}
+
+TipoRet MKDIR (TDirectorio &sistema, Cadena nombreDirectorio){
+    if(sistemaInicializado){
+        if(!existChildrenDirectory(sistema, nombreDirectorio) && strcmp(nombreDirectorio, "RAIZ") != 0){
+            if(strcmp(nombreDirectorio, "RAIZ") != 0 || strcmp(nombreDirectorio, "raiz") != 0){
+                createChildrenDirectory(sistema, nombreDirectorio);
+                return OK;
+            }else{
+                printf("  - No puede asignar RAIZ como nombre de directorio -\n");
+                return ERROR;
+            }
+            
+        }else{
+            printf("  - Directorio ya existente -\n");
+            return ERROR;
+        }
+        
+    }else {
+        printf("  - Sistema no inicializado -\n");
+        return ERROR;
+    }
+}
+
+TipoRet RMDIR (TDirectorio &sistema, Cadena nombreDirectorio){
+    if(sistemaInicializado){
+        if(existChildrenDirectory(sistema, nombreDirectorio)){
+            removeChildrenDirectory(sistema, nombreDirectorio);
+            return OK;
+        }else{
+            printf("  - Archivo no existente -\n");
+            return ERROR;
+        }
+    }else {
+        printf("  - Sistema no inicializado -\n");
+        return ERROR;
+    }
+}
+
+TipoRet DIR (TDirectorio &sistema, Cadena parametro){
+    if(sistemaInicializado){
+        printDirectoryDir(sistema);
+        return OK;
+    }else {
+        printf("  - Sistema no inicializado -\n");
+        return ERROR;
+    }
+}
+
+TipoRet MOVE (TDirectorio &sistema, Cadena nombreDirectorio, Cadena directorioDestino){
+    if(sistemaInicializado){
+        printf("move");
         return OK;
     }else {
         printf("  - Sistema no inicializado -\n");
