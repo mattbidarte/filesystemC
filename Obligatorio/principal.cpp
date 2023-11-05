@@ -188,11 +188,6 @@ int main() {
         }else if (0 == strcmp(comando, "CD")) {
                 TipoRet salida=CD(diractual, nombredirectorio);
                 if (salida == OK){
-                    /*
-                        if (0 == strcmp(nombredirectorio, "..")){
-                            diractual = dirmoveFatherDirectory(diractual);
-                        }
-                     * */
                         printf("  OK\n");
                 }else if (salida == ERROR )
                                 printf("  ERROR\n");
@@ -485,8 +480,15 @@ TipoRet RMDIR (TDirectorio &sistema, Cadena nombreDirectorio){
 
 TipoRet DIR (TDirectorio &sistema, Cadena parametro){
     if(sistemaInicializado){
-        printDirectoryDir(sistema);
-        return OK;
+        //printf("%s\n", parametro);
+        //printf("%d\n", strcmp(parametro, " /S"));
+        if(0 == strcmp(parametro, " /S")){
+            printDirectoryDirS(sistema);
+            return OK;
+        }else{
+            printDirectoryDir(sistema);
+            return OK;
+        }
     }else {
         printf("  - Sistema no inicializado -\n");
         return ERROR;
@@ -495,8 +497,70 @@ TipoRet DIR (TDirectorio &sistema, Cadena parametro){
 
 TipoRet MOVE (TDirectorio &sistema, Cadena nombreDirectorio, Cadena directorioDestino){
     if(sistemaInicializado){
-        printf("move");
-        return OK;
+        // Sacar primer char de cadena dirDestino
+        for (int i = 0; directorioDestino[i] != '\0'; ++i) {
+            directorioDestino[i] = directorioDestino[i + 1];
+        }
+        
+        // Punteros auxiliares y busqueda de dirDestino by Path
+        TDirectorio actual = sistema;
+        TDirectorio root = moveRootDirectory(sistema);
+        TDirectorio destino = findDirectoryByPath(root, directorioDestino);
+     
+        if (destino != NULL){
+            // Verificar si dirDestino existe o si es el dir Root
+            if(isSubDirectoryRoot(root, directorioDestino) || isRootDirectory(destino)){
+                // Ver si es un dir o un archivo a mover verificando si tiene '.'
+                Cadena punto = strchr(nombreDirectorio, '.');
+
+                // El nombreDirectorio contiene un punto
+                if (punto) {
+                    if(existFileDirectory(actual, nombreDirectorio)){
+                        if(actual != destino){
+                            TArchivo origen = getFileDirectory(sistema, nombreDirectorio);
+                            moveSubArchive(actual, origen, destino);
+                            printf("  - Archivo movido con exito -\n");
+                            return OK;
+                        }else{
+                            printf("  - No puede mover el archivo dentro de el directorio -\n");
+                            return ERROR;
+                        }
+                    }else{
+                        printf("  - Archivo a mover NO existe -\n");
+                        return ERROR;
+                    }
+                } 
+                // El nombreDirectorio no contiene un punto
+                else {
+                    if(existChildrenDirectory(actual, nombreDirectorio)){
+                        TDirectorio origen = moveChildrenDirectory(actual, nombreDirectorio);
+                        if(!isSubDirectoryRoot(origen, directorioDestino)){
+                            if (0 == strcmp(returnPath(origen), directorioDestino)){
+                                printf("  - No se puede mover el directorio dentro de el mismo -\n");
+                                return ERROR;
+                            }else{
+                                moveSubDirectory(actual, origen, destino);
+                                printf("  - Directorio movido con exito -\n");
+                                return OK;
+                            }
+                        }else{
+                            printf("  - Directorio destino es sub directorio de origen -\n");
+                            return ERROR;
+                        }
+                    }else{
+                        printf("  - Directorio a mover NO existe -\n");
+                        return ERROR;
+                    }
+                }
+            }else{
+                printf("  - Directorio destino NO existe -\n");
+                return ERROR;
+            }
+        }else{
+            printf("  - Directorio destino NO existe -\n");
+            return ERROR;
+        }
+        
     }else {
         printf("  - Sistema no inicializado -\n");
         return ERROR;
