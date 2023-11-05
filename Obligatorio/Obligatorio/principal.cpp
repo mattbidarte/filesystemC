@@ -188,11 +188,6 @@ int main() {
         }else if (0 == strcmp(comando, "CD")) {
                 TipoRet salida=CD(diractual, nombredirectorio);
                 if (salida == OK){
-                    /*
-                        if (0 == strcmp(nombredirectorio, "..")){
-                            diractual = dirmoveFatherDirectory(diractual);
-                        }
-                     * */
                         printf("  OK\n");
                 }else if (salida == ERROR )
                                 printf("  ERROR\n");
@@ -485,12 +480,15 @@ TipoRet RMDIR (TDirectorio &sistema, Cadena nombreDirectorio){
 
 TipoRet DIR (TDirectorio &sistema, Cadena parametro){
     if(sistemaInicializado){
-        //printDirectoryDir(sistema);
-        TDirectorio actual = sistema;
-        sistema = moveRootDirectory(sistema);
-        printDirectoryDirS(sistema);
-        sistema = actual;
-        return OK;
+        //printf("%s\n", parametro);
+        //printf("%d\n", strcmp(parametro, " /S"));
+        if(0 == strcmp(parametro, " /S")){
+            printDirectoryDirS(sistema);
+            return OK;
+        }else{
+            printDirectoryDir(sistema);
+            return OK;
+        }
     }else {
         printf("  - Sistema no inicializado -\n");
         return ERROR;
@@ -499,7 +497,43 @@ TipoRet DIR (TDirectorio &sistema, Cadena parametro){
 
 TipoRet MOVE (TDirectorio &sistema, Cadena nombreDirectorio, Cadena directorioDestino){
     if(sistemaInicializado){
-        printf("move");
+        
+        for (int i = 0; directorioDestino[i] != '\0'; ++i) {
+            directorioDestino[i] = directorioDestino[i + 1];
+        }
+        
+        if(isSubDirectoryRoot(sistema, directorioDestino)){
+            printf("Existe\n");
+            
+            Cadena punto = strchr(nombreDirectorio, '.');
+            
+            if (punto) {
+                printf("Tiene punto\n");
+                // El nombreDirectorio contiene un punto
+                // Aquí puedes poner la lógica que necesitas si el nombre de directorio contiene un punto
+                TArchivo origen = getFileDirectory(sistema, nombreDirectorio);
+                TDirectorio actual = sistema;
+                TDirectorio root = moveRootDirectory(sistema);
+                TDirectorio destino = findDirectoryByPath(root, directorioDestino);
+                
+                moveSubArchive(actual, origen, destino);
+            } else {
+                printf("No tiene punto\n");
+                // El nombreDirectorio no contiene un punto
+                // Aquí puedes poner la lógica que necesitas si el nombre de directorio no contiene un punto
+                TDirectorio actual = sistema;
+                TDirectorio root = moveRootDirectory(sistema);
+
+                TDirectorio origen = moveChildrenDirectory(actual, nombreDirectorio);
+                TDirectorio destino = findDirectoryByPath(root, directorioDestino);
+
+                moveSubDirectory(actual, origen, destino);
+            }
+        }else 
+            printf("NO existe\n");
+        
+   
+        printf("move\n");
         return OK;
     }else {
         printf("  - Sistema no inicializado -\n");

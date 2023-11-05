@@ -116,4 +116,8 @@ void printDirectoryDir (TDirectorio directorio);
 //pos-condición imprime el directorio ejecutando DIR /S
 void printDirectoryDirS (TDirectorio directorio);
 
+TDirectorio findDirectoryByPath(TDirectorio root, Cadena ruta);
+
+void changeChildrenPath (TDirectorio sistema);
+
 #endif
